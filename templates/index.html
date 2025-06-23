@@ -30,6 +30,13 @@
                 </div>
               {% endfor %}
               <pre class="mb-0">{{ content.raw }}</pre>
+            {% elif section == 'Speedtest' and content is mapping %}
+              <ul class="list-unstyled mb-2">
+                <li><strong>Ping:</strong> {{ content.ping }}</li>
+                <li><strong>Download:</strong> {{ content.download }}</li>
+                <li><strong>Upload:</strong> {{ content.upload }}</li>
+              </ul>
+              <pre class="mb-0">{{ content.raw }}</pre>
             {% else %}
               <pre class="mb-0">{{ content }}</pre>
             {% endif %}
