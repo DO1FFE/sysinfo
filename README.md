@@ -25,4 +25,4 @@ bash sysinfo.sh
 ```
 
 Das Skript gibt Informationen zu Betriebssystem, Distribution, CPU, Arbeitsspeicher, Festplattenbelegung und Netzwerkadressen aus.
-Wenn `speedtest-cli` installiert ist, wird außerdem ein kurzer Geschwindigkeitstest durchgeführt. Dabei wird ein Server in der Nähe von Frankfurt genutzt (Server-ID `32412`).
+Ist `speedtest-cli` vorhanden, versucht es nun automatisch mehrere Server aus Deutschland (z.B. `68177`, `60421`, `59653`, `64665` und `68164`). Schlägt jeder Versuch fehl, wird ersatzweise ein Ping-Test ausgeführt.
