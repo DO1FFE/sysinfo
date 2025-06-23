@@ -3,6 +3,8 @@ import subprocess
 import shutil
 import re
 
+from typing import Dict
+
 app = Flask(__name__)
 
 def run_cmd(cmd):
@@ -75,6 +77,24 @@ def parse_disk(output: str) -> dict:
             })
     return {"raw": output, "entries": entries}
 
+
+def parse_speedtest(output: str) -> Dict[str, str]:
+    """Parse `speedtest-cli --simple` output and return metrics."""
+    ping = download = upload = ''
+    for line in output.splitlines():
+        if line.lower().startswith('ping:'):
+            ping = line.split(':', 1)[1].strip()
+        elif line.lower().startswith('download:'):
+            download = line.split(':', 1)[1].strip()
+        elif line.lower().startswith('upload:'):
+            upload = line.split(':', 1)[1].strip()
+    return {
+        'raw': output,
+        'ping': ping,
+        'download': download,
+        'upload': upload,
+    }
+
 def get_sysinfo():
     info = {}
     info['System'] = run_cmd('uname -a')
@@ -89,6 +109,11 @@ def get_sysinfo():
     disk_output = run_cmd('df -h')
     info['Memory'] = parse_memory(mem_output)
     info['Disk'] = parse_disk(disk_output)
+    if shutil.which('speedtest-cli'):
+        speedtest_output = run_cmd('speedtest-cli --simple')
+        info['Speedtest'] = parse_speedtest(speedtest_output)
+    else:
+        info['Speedtest'] = 'speedtest-cli not available'
     if shutil.which('ip'):
         info['Network'] = run_cmd("ip -o -4 addr show | awk '{print $2, $4}'")
     else:
