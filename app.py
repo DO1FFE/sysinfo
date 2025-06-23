@@ -117,6 +117,10 @@ def get_sysinfo():
             if 'Cannot retrieve speedtest configuration' not in out and 'ERROR' not in out:
                 speed_data = parse_speedtest(out)
                 break
+        if not speed_data:
+            auto_out = run_cmd('speedtest-cli --simple')
+            if 'Cannot retrieve speedtest configuration' not in auto_out and 'ERROR' not in auto_out:
+                speed_data = parse_speedtest(auto_out)
         if speed_data:
             info['Speedtest'] = speed_data
         else:

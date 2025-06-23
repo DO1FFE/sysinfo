@@ -25,4 +25,5 @@ bash sysinfo.sh
 ```
 
 Das Skript gibt Informationen zu Betriebssystem, Distribution, CPU, Arbeitsspeicher, Festplattenbelegung und Netzwerkadressen aus.
-Ist `speedtest-cli` vorhanden, versucht es nun automatisch mehrere Server aus Deutschland (z.B. `68177`, `60421`, `59653`, `64665` und `68164`). Schlägt jeder Versuch fehl, wird ersatzweise ein Ping-Test ausgeführt.
+Ist `speedtest-cli` vorhanden, wird nacheinander versucht, mehrere deutsche Server zu nutzen (z.B. `68177`, `60421`, `59653`, `64665` und `68164`).
+Schlagen alle fehl, erfolgt ein weiterer Versuch ohne Vorgabe eines Servers. Erst wenn auch dieser scheitert, wird ersatzweise ein Ping-Test ausgeführt.

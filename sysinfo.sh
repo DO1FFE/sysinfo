@@ -28,7 +28,11 @@ print_section "Disk"
 df -h
 
 print_section "Network"
-ip -o -4 addr show | awk '{print $2, $4}'
+if command -v ip >/dev/null 2>&1; then
+  ip -o -4 addr show | awk '{print $2, $4}'
+else
+  echo "ip command not available"
+fi
 
 print_section "Speedtest"
 if command -v speedtest-cli >/dev/null 2>&1; then
@@ -43,6 +47,12 @@ if command -v speedtest-cli >/dev/null 2>&1; then
     fi
     echo "Server $SID failed, trying next..." >&2
   done
+  if [ "$SUCCESS" = false ]; then
+    echo "All preset servers failed, trying automatic selection..." >&2
+    if speedtest-cli --simple; then
+      SUCCESS=true
+    fi
+  fi
   if [ "$SUCCESS" = false ]; then
     echo "Speedtest failed. Running ping as fallback." >&2
     ping -c 4 google.com
