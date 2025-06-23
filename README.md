@@ -25,4 +25,4 @@ bash sysinfo.sh
 ```
 
 Das Skript gibt Informationen zu Betriebssystem, Distribution, CPU, Arbeitsspeicher, Festplattenbelegung und Netzwerkadressen aus.
-Wenn `speedtest-cli` installiert ist, wird außerdem ein kurzer Geschwindigkeitstest durchgeführt.
+Wenn `speedtest-cli` installiert ist, wird außerdem ein kurzer Geschwindigkeitstest durchgeführt. Dabei wird ein Server in der Nähe von Frankfurt genutzt (Server-ID `32412`).

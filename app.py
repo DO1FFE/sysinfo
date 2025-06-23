@@ -110,7 +110,8 @@ def get_sysinfo():
     info['Memory'] = parse_memory(mem_output)
     info['Disk'] = parse_disk(disk_output)
     if shutil.which('speedtest-cli'):
-        speedtest_output = run_cmd('speedtest-cli --simple')
+        # Use a server located near Frankfurt for more consistent results
+        speedtest_output = run_cmd('speedtest-cli --simple --server 32412')
         info['Speedtest'] = parse_speedtest(speedtest_output)
     else:
         info['Speedtest'] = 'speedtest-cli not available'

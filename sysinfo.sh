@@ -32,7 +32,8 @@ ip -o -4 addr show | awk '{print $2, $4}'
 
 print_section "Speedtest"
 if command -v speedtest-cli >/dev/null 2>&1; then
-  speedtest-cli --simple
+  # Use a server located near Frankfurt
+  speedtest-cli --simple --server 32412
 else
   echo "speedtest-cli not available"
 fi
