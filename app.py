@@ -110,9 +110,18 @@ def get_sysinfo():
     info['Memory'] = parse_memory(mem_output)
     info['Disk'] = parse_disk(disk_output)
     if shutil.which('speedtest-cli'):
-        # Use a server located near Frankfurt for more consistent results
-        speedtest_output = run_cmd('speedtest-cli --simple --server 32412')
-        info['Speedtest'] = parse_speedtest(speedtest_output)
+        servers = ['68177', '60421', '59653', '64665', '68164']
+        speed_data = None
+        for sid in servers:
+            out = run_cmd(f'speedtest-cli --simple --server {sid}')
+            if 'Cannot retrieve speedtest configuration' not in out and 'ERROR' not in out:
+                speed_data = parse_speedtest(out)
+                break
+        if speed_data:
+            info['Speedtest'] = speed_data
+        else:
+            fallback = run_cmd('ping -c 4 google.com')
+            info['Speedtest'] = {'raw': fallback}
     else:
         info['Speedtest'] = 'speedtest-cli not available'
     if shutil.which('ip'):

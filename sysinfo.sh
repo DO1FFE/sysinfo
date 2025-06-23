@@ -32,8 +32,21 @@ ip -o -4 addr show | awk '{print $2, $4}'
 
 print_section "Speedtest"
 if command -v speedtest-cli >/dev/null 2>&1; then
-  # Use a server located near Frankfurt
-  speedtest-cli --simple --server 32412
+  # Try several German servers in case one fails
+  SERVERS=(68177 60421 59653 64665 68164)
+  SUCCESS=false
+  for SID in "${SERVERS[@]}"; do
+    echo "Testing with server $SID..."
+    if speedtest-cli --simple --server "$SID"; then
+      SUCCESS=true
+      break
+    fi
+    echo "Server $SID failed, trying next..." >&2
+  done
+  if [ "$SUCCESS" = false ]; then
+    echo "Speedtest failed. Running ping as fallback." >&2
+    ping -c 4 google.com
+  fi
 else
   echo "speedtest-cli not available"
 fi
