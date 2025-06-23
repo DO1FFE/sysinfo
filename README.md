@@ -1,6 +1,6 @@
 # sysinfo
 
-Dieses Repository stellt eine kleine Flask-Webanwendung bereit, die Systeminformationen grafisch aufbereitet anzeigt. Zusätzlich gibt es ein Shell-Skript, das die gleichen Informationen in der Konsole ausgibt.
+Dieses Repository stellt eine kleine Flask-Webanwendung bereit, die Systeminformationen grafisch aufbereitet anzeigt. Die Speicherauslastung und Festplattenbelegung werden dabei als Fortschrittsbalken dargestellt. Zusätzlich gibt es ein Shell-Skript, das die gleichen Informationen in der Konsole ausgibt.
 
 ## Voraussetzungen
 
@@ -16,7 +16,7 @@ pip install Flask
 python app.py
 ```
 
-Danach im Browser <http://localhost:5000> aufrufen.
+Danach im Browser <http://localhost:8015> aufrufen.
 
 ## Alternativ: Skript in der Konsole
 
