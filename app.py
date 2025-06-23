@@ -1,6 +1,7 @@
 from flask import Flask, render_template
 import subprocess
 import shutil
+import re
 
 app = Flask(__name__)
 
@@ -9,6 +10,70 @@ def run_cmd(cmd):
         return subprocess.check_output(cmd, shell=True, text=True).strip()
     except subprocess.CalledProcessError as e:
         return e.output.strip() if e.output else str(e)
+
+
+def _parse_size_to_mib(value: str) -> float:
+    """Convert human-readable size like '9.9Gi' to MiB as float."""
+    try:
+        if value.lower().endswith('gi'):
+            return float(value[:-2]) * 1024
+        if value.lower().endswith('g'):
+            return float(value[:-1]) * 1024
+        if value.lower().endswith('mi'):
+            return float(value[:-2])
+        if value.lower().endswith('m'):
+            return float(value[:-1])
+        if value.lower().endswith('ti'):
+            return float(value[:-2]) * 1024 * 1024
+        if value.lower().endswith('t'):
+            return float(value[:-1]) * 1024 * 1024
+        return float(value)
+    except ValueError:
+        return 0.0
+
+
+def parse_memory(output: str) -> dict:
+    """Parse output of `free -h` and return size metrics."""
+    lines = output.splitlines()
+    if len(lines) < 2:
+        return {"raw": output}
+    header = lines[0].split()
+    values = lines[1].split()
+    if values and values[0].lower().startswith('mem'):
+        values = values[1:]
+    mem = dict(zip(header, values))
+    total = _parse_size_to_mib(mem.get('total', mem.get('Mem:', '0')))
+    used = _parse_size_to_mib(mem.get('used', '0'))
+    percent = round(used / total * 100) if total else 0
+    return {
+        "raw": output,
+        "total": total,
+        "used": used,
+        "percent": percent,
+    }
+
+
+def parse_disk(output: str) -> dict:
+    """Parse `df -h` output into a list of entries."""
+    lines = output.splitlines()
+    entries = []
+    for line in lines[1:]:
+        parts = line.split()
+        if len(parts) >= 6:
+            filesystem, size, used, avail, pct, mount = parts[:6]
+            try:
+                pct_val = int(re.sub(r'[^0-9]', '', pct))
+            except ValueError:
+                pct_val = 0
+            entries.append({
+                "filesystem": filesystem,
+                "size": size,
+                "used": used,
+                "avail": avail,
+                "percent": pct_val,
+                "mount": mount,
+            })
+    return {"raw": output, "entries": entries}
 
 def get_sysinfo():
     info = {}
@@ -20,8 +85,10 @@ def get_sysinfo():
     cpu_model = run_cmd("grep -m1 'model name' /proc/cpuinfo")
     cpu_cores = run_cmd('nproc --all')
     info['CPU'] = f"{cpu_model}\nCores: {cpu_cores}"
-    info['Memory'] = run_cmd('free -h')
-    info['Disk'] = run_cmd('df -h')
+    mem_output = run_cmd('free -h')
+    disk_output = run_cmd('df -h')
+    info['Memory'] = parse_memory(mem_output)
+    info['Disk'] = parse_disk(disk_output)
     if shutil.which('ip'):
         info['Network'] = run_cmd("ip -o -4 addr show | awk '{print $2, $4}'")
     else:

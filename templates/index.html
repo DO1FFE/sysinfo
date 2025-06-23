@@ -15,7 +15,24 @@
             {{ section }}
           </div>
           <div class="card-body">
-            <pre class="mb-0">{{ content }}</pre>
+            {% if section == 'Memory' %}
+              <div class="progress mb-2" style="height: 20px;">
+                <div class="progress-bar" role="progressbar" style="width: {{ content.percent }}%;" aria-valuenow="{{ content.percent }}" aria-valuemin="0" aria-valuemax="100">
+                  {{ content.percent }}%
+                </div>
+              </div>
+              <pre class="mb-0">{{ content.raw }}</pre>
+            {% elif section == 'Disk' %}
+              {% for entry in content.entries %}
+                <p class="mb-1">{{ entry.filesystem }} ({{ entry.mount }}) - {{ entry.used }} / {{ entry.size }} ({{ entry.percent }}%)</p>
+                <div class="progress mb-2" style="height: 20px;">
+                  <div class="progress-bar bg-info" role="progressbar" style="width: {{ entry.percent }}%;" aria-valuenow="{{ entry.percent }}" aria-valuemin="0" aria-valuemax="100"></div>
+                </div>
+              {% endfor %}
+              <pre class="mb-0">{{ content.raw }}</pre>
+            {% else %}
+              <pre class="mb-0">{{ content }}</pre>
+            {% endif %}
           </div>
         </div>
       {% endfor %}
