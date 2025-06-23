@@ -14,6 +14,17 @@ def run_cmd(cmd):
         return e.output.strip() if e.output else str(e)
 
 
+def run_cmd_full(cmd):
+    """Run a command and return its output and exit code."""
+    result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
+    out = result.stdout.strip()
+    if result.returncode != 0:
+        err = result.stderr.strip()
+        if err:
+            out = f"{out}\n{err}" if out else err
+    return out, result.returncode
+
+
 def _parse_size_to_mib(value: str) -> float:
     """Convert human-readable size like '9.9Gi' to MiB as float."""
     try:
@@ -113,13 +124,13 @@ def get_sysinfo():
         servers = ['68177', '60421', '59653', '64665', '68164']
         speed_data = None
         for sid in servers:
-            out = run_cmd(f'speedtest-cli --simple --server {sid}')
-            if 'Cannot retrieve speedtest configuration' not in out and 'ERROR' not in out:
+            out, rc = run_cmd_full(f'speedtest-cli --simple --server {sid}')
+            if rc == 0 and 'Cannot retrieve speedtest configuration' not in out and 'ERROR' not in out:
                 speed_data = parse_speedtest(out)
                 break
         if not speed_data:
-            auto_out = run_cmd('speedtest-cli --simple')
-            if 'Cannot retrieve speedtest configuration' not in auto_out and 'ERROR' not in auto_out:
+            auto_out, rc = run_cmd_full('speedtest-cli --simple')
+            if rc == 0 and 'Cannot retrieve speedtest configuration' not in auto_out and 'ERROR' not in auto_out:
                 speed_data = parse_speedtest(auto_out)
         if speed_data:
             info['Speedtest'] = speed_data
