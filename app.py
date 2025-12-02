@@ -1,4 +1,4 @@
-from flask import Flask, render_template
+from flask import Flask, jsonify, render_template
 import subprocess
 import shutil
 import re
@@ -149,6 +149,16 @@ def get_sysinfo():
 def index():
     data = get_sysinfo()
     return render_template('index.html', data=data)
+
+
+@app.route('/api/sysinfo')
+def api_sysinfo():
+    data = get_sysinfo()
+    response = jsonify(data)
+    response.headers['Cache-Control'] = 'no-store, max-age=0, must-revalidate'
+    response.headers['Pragma'] = 'no-cache'
+    response.headers['Expires'] = '0'
+    return response
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=8015)
