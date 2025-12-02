@@ -2,6 +2,7 @@ from flask import Flask, jsonify, render_template
 import subprocess
 import shutil
 import re
+import time
 
 from typing import Dict
 
@@ -89,6 +90,70 @@ def parse_disk(output: str) -> dict:
     return {"raw": output, "entries": entries}
 
 
+def parse_cpu_usage(delay: float = 0.1) -> Dict[str, float]:
+    """Calculate CPU usage by sampling /proc/stat twice."""
+
+    def read_cpu_line() -> list[int]:
+        with open("/proc/stat", "r", encoding="utf-8") as handle:
+            for line in handle:
+                if line.startswith("cpu "):
+                    return [int(val) for val in line.split()[1:11]]
+        return []
+
+    first = read_cpu_line()
+    time.sleep(delay)
+    second = read_cpu_line()
+    if not first or not second:
+        return {"usage": 0.0, "idle": 0.0}
+
+    deltas = [b - a for a, b in zip(first, second)]
+    user, nice, system, idle, iowait, irq, softirq, steal, guest, guest_nice = deltas
+    idle_all = idle + iowait
+    non_idle = user + nice + system + irq + softirq + steal
+    total = idle_all + non_idle
+    usage_pct = (non_idle / total * 100) if total else 0.0
+
+    return {
+        "usage": round(usage_pct, 2),
+        "idle": round(idle_all / total * 100, 2) if total else 0.0,
+        "user": round(user / total * 100, 2) if total else 0.0,
+        "system": round(system / total * 100, 2) if total else 0.0,
+        "iowait": round(iowait / total * 100, 2) if total else 0.0,
+    }
+
+
+def parse_network_counters() -> Dict[str, object]:
+    """Parse /proc/net/dev and aggregate RX/TX counters."""
+
+    interfaces = []
+    total_rx = total_tx = 0
+    try:
+        with open("/proc/net/dev", "r", encoding="utf-8") as handle:
+            lines = handle.readlines()[2:]
+    except OSError:
+        return {"rx_bytes": 0, "tx_bytes": 0, "interfaces": []}
+
+    for line in lines:
+        if ":" not in line:
+            continue
+        name, metrics = line.split(":", 1)
+        parts = metrics.split()
+        if len(parts) < 16:
+            continue
+        rx_bytes, tx_bytes = int(parts[0]), int(parts[8])
+        iface = name.strip()
+        interfaces.append({
+            "name": iface,
+            "rx_bytes": rx_bytes,
+            "tx_bytes": tx_bytes,
+        })
+        if iface != "lo":
+            total_rx += rx_bytes
+            total_tx += tx_bytes
+
+    return {"rx_bytes": total_rx, "tx_bytes": total_tx, "interfaces": interfaces}
+
+
 def parse_speedtest(output: str) -> Dict[str, str]:
     """Parse `speedtest-cli --simple` output and return metrics."""
     ping = download = upload = ''
@@ -115,7 +180,11 @@ def get_sysinfo():
         info['Distribution'] = 'lsb_release not available'
     cpu_model = run_cmd("grep -m1 'model name' /proc/cpuinfo")
     cpu_cores = run_cmd('nproc --all')
-    info['CPU'] = f"{cpu_model}\nCores: {cpu_cores}"
+    info['CPU'] = {
+        "model": cpu_model,
+        "cores": cpu_cores,
+        "usage": parse_cpu_usage(),
+    }
     mem_output = run_cmd('free -h')
     disk_output = run_cmd('df -h')
     info['Memory'] = parse_memory(mem_output)
@@ -143,6 +212,7 @@ def get_sysinfo():
         info['Network'] = run_cmd("ip -o -4 addr show | awk '{print $2, $4}'")
     else:
         info['Network'] = run_cmd('hostname -I')
+    info['NetworkStats'] = parse_network_counters()
     return info
 
 @app.route('/')
