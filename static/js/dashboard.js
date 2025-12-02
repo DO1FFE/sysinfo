@@ -10,6 +10,7 @@ const charts = {};
 let lastNetworkTotals = null;
 let lastNetworkTimestamp = null;
 const maxNetworkPoints = 20;
+const THEME_KEY = 'sysinfo-theme';
 
 function formatBytes(bytes) {
   if (bytes === 0) return '0 B/s';
@@ -17,6 +18,11 @@ function formatBytes(bytes) {
   const i = Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), sizes.length - 1);
   const value = bytes / 1024 ** i;
   return `${value.toFixed(1)} ${sizes[i]}`;
+}
+
+function setText(id, value) {
+  const el = document.getElementById(id);
+  if (el) el.textContent = value;
 }
 
 function initCpuChart(ctx) {
@@ -211,6 +217,19 @@ function updateNetworkChart(networkStats) {
   lastNetworkTimestamp = now;
 }
 
+function updateKpiCards(data) {
+  const cpuUsage = data?.CPU?.usage?.usage ?? 0;
+  const memoryUsage = data?.Memory?.percent ?? 0;
+  const diskEntries = data?.Disk?.entries ?? [];
+  const busiestDisk = diskEntries.reduce((max, entry) => Math.max(max, entry.percent ?? 0), 0);
+  const networkText = (data?.Network || '–').toString().split('\n')[0];
+
+  setText('cpuUsageValue', `${cpuUsage.toFixed(1)}%`);
+  setText('ramUsageValue', `${Math.round(memoryUsage)}%`);
+  setText('diskUsageValue', `${busiestDisk}%`);
+  setText('networkIpValue', `${networkText}`);
+}
+
 async function fetchData() {
   const response = await fetch('/api/sysinfo');
   if (!response.ok) throw new Error('Fehler beim Abrufen der Systemdaten');
@@ -221,7 +240,30 @@ function updateTimestamp() {
   const target = document.getElementById('lastUpdated');
   const timestamp = new Date().toLocaleTimeString();
   if (target) {
-    target.textContent = `Zuletzt aktualisiert: ${timestamp}`;
+    target.textContent = `Letzte Aktualisierung: ${timestamp}`;
+  }
+}
+
+function applyTheme(theme) {
+  document.body.setAttribute('data-theme', theme);
+  localStorage.setItem(THEME_KEY, theme);
+
+  const toggle = document.getElementById('themeToggle');
+  if (toggle) {
+    toggle.textContent = theme === 'dark' ? '☀️ Light' : '🌙 Dark';
+  }
+}
+
+function initThemeToggle() {
+  const savedTheme = localStorage.getItem(THEME_KEY) || 'light';
+  applyTheme(savedTheme);
+
+  const toggle = document.getElementById('themeToggle');
+  if (toggle) {
+    toggle.addEventListener('click', () => {
+      const nextTheme = document.body.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+      applyTheme(nextTheme);
+    });
   }
 }
 
@@ -232,6 +274,7 @@ async function pollData() {
     updateMemoryChart(data.Memory);
     updateDiskChart(data.Disk);
     updateNetworkChart(data.NetworkStats);
+    updateKpiCards(data);
     updateTimestamp();
   } catch (error) {
     console.error(error);
@@ -247,6 +290,7 @@ function initCharts() {
 
 window.addEventListener('DOMContentLoaded', () => {
   initCharts();
+  initThemeToggle();
   pollData();
   setInterval(pollData, 8000);
 });
